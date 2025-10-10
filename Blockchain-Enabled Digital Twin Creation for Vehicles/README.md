@@ -63,13 +63,14 @@
 ### Files Structure
 
 ```
-universal-identity-dashboard/
-├── app.js                 # Main Express server
-├── package.json          # Dependencies
-├── connection-org1.json  # Fabric network profile
-├── admin-cert.pem       # X.509 certificate
-├── admin-key.pem        # Private key
-├── .env                 # Environment variables
-└── README.md           # This file
+distributed-systems-project/ 
+├── app-distributed-systems.js    # Main server (vehicles only) 
+├── byzantine-handler.js           # Byzantine fault tolerance 
+├── consensus-protocol.js          # Raft consensus implementation 
+├── failure-recovery.js            # Failure detection & recovery 
+├── package.json                   # Dependencies 
+├── .env                          # Configuration 
+└── public/ 
+    └── index.html                # Dashboard (distributed systems focus) 
 ```
 
