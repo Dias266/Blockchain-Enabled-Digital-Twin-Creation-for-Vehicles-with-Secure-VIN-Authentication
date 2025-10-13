@@ -183,4 +183,4 @@ class RaftConsensusProtocol {
     } 
 } 
 
-module.exports = RaftConsensusProtocol; 
+module.exports = RaftConsensusProtocol;
