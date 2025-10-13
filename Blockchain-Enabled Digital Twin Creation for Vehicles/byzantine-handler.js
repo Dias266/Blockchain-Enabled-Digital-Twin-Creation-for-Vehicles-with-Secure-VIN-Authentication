@@ -156,4 +156,4 @@ class ByzantineFaultHandler {
     } 
 } 
 
-module.experts = ByzantineFaultHandler;
+module.exports = ByzantineFaultHandler;
