@@ -1,3 +1,4 @@
+
 // byzantine-handler.js - Real Byzantine Fault Tolerance 
 
 class ByzantineFaultHandler { 
