@@ -581,3 +581,82 @@ app.listen(PORT, () => {
 }); 
 
 module.exports = app; 
+
+// Store telemetry data from IoT system
+app.post('/api/telemetry/store', async (req, res) => {
+    try {
+        const { vin, temperature, timestamp, signature, authStatus } = req.body;
+        
+        if (!vin || !temperature || !timestamp) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const telemetryData = {
+            vin, temperature, timestamp, signature, authStatus,
+            storedAt: new Date().toISOString()
+        };
+
+        // Store in blockchain via existing contract
+        await contract.submitTransaction(
+            'storeTelemetry',
+            JSON.stringify(telemetryData)
+        );
+
+        console.log(`✅ Stored telemetry for VIN: ${vin}`);
+        res.json({ success: true, data: telemetryData });
+
+    } catch (error) {
+        console.error('❌ Error storing telemetry:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get latest telemetry for a VIN
+app.get('/api/telemetry/:vin/latest', async (req, res) => {
+    try {
+        const result = await contract.evaluateTransaction(
+            'getLatestTelemetry',
+            req.params.vin
+        );
+        res.json({ success: true, data: JSON.parse(result.toString()) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get telemetry history
+app.get('/api/telemetry/:vin/history', async (req, res) => {
+    try {
+        const limit = req.query.limit || '100';
+        const result = await contract.evaluateTransaction(
+            'getTelemetryHistory',
+            req.params.vin,
+            limit
+        );
+        const history = JSON.parse(result.toString());
+        res.json({ success: true, data: history, count: history.length });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Export ML dataset
+app.get('/api/ml/dataset/export', async (req, res) => {
+    try {
+        const result = await contract.evaluateTransaction('getAllTelemetry');
+        const allData = JSON.parse(result.toString());
+        
+        // Convert to CSV
+        const headers = 'vin,temperature,timestamp,authStatus,anomalyScore\n';
+        const rows = allData.map(t => {
+            const anomaly = (t.temperature > 85 || t.temperature < 15) ? 1 : 0;
+            return `${t.vin},${t.temperature},${t.timestamp},${t.authStatus},${anomaly}`;
+        }).join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="telemetry_dataset.csv"');
+        res.send(headers + rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
