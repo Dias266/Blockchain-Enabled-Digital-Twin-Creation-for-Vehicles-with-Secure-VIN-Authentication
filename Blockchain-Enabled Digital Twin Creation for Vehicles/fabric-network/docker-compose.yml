@@ -1,1 +1,45 @@
+version: '3.7'
 
+services:
+  orderer.example.com:
+    container_name: orderer.example.com
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
+      - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
+    ports:
+      - 7050:7050
+
+  peer0.org1.example.com:
+    container_name: peer0.org1.example.com
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_PEER_ID=peer0.org1.example.com
+      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+    ports:
+      - 7051:7051
+
+  peer1.org1.example.com:
+    container_name: peer1.org1.example.com
+    image: hyperledger/fabric-peer:2.5
+    ports:
+      - 8051:7051
+
+  peer2.org1.example.com:
+    container_name: peer2.org1.example.com
+    image: hyperledger/fabric-peer:2.5
+    ports:
+      - 9051:7051
+
+  peer3.org1.example.com:
+    container_name: peer3.org1.example.com
+    image: hyperledger/fabric-peer:2.5
+    ports:
+      - 10051:7051
+
+  peer4.org1.example.com:
+    container_name: peer4.org1.example.com
+    image: hyperledger/fabric-peer:2.5
+    ports:
+      - 11051:7051
