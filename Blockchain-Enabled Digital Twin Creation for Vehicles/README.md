@@ -64,13 +64,39 @@
 
 ```
 distributed-systems-project/ 
-├── app-distributed-systems.js    # Main server (vehicles only) 
-├── byzantine-handler.js           # Byzantine fault tolerance 
-├── consensus-protocol.js          # Raft consensus implementation 
-├── failure-recovery.js            # Failure detection & recovery 
-├── package.json                   # Dependencies 
-├── .env                          # Configuration 
-└── public/ 
-    └── index.html                # Dashboard (distributed systems focus) 
+├── backend    # Main server (vehicles only)
+   └── app.js
+   └── byzantine-handler.js    # Byzantine fault tolerance
+   └── consensus protocol.js    # Raft consensus implementation
+   └── failure-recovery.js     # Failure detection & recovery
+   └── mqtt-integration.js
+├── chaincode        
+   └── fabric samples
+   └── index.js 
+   └── package-lock.json
+   └── package.json
+   └── vehicle-chaincode.js
+├── fabric-network          
+   └── configtx.yaml
+   └── crypto-config.yaml
+   └── docker-compose.yml
+   └── network.sh
+├── iot-telematics        
+   └── arduino_auth_controller.ino
+   └── congif.h
+   └── control-unit-iot.js
+   └── dashboard-iot.html
+   └── esp32_telematics.ino
+├── public              
+   └── app.js
+   └── index.html
+   └── style.css
+├──test
+   └── test-distributed-systems.js
+├── README.md              
+├── start-all.sh              
+
+
+
 ```
 
