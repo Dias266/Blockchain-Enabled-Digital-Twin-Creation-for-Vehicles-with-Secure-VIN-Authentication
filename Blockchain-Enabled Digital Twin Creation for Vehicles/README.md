@@ -1,17 +1,24 @@
-# Universal Digital Identity Framework (UDIF)
-
-## Module 1: Blockchain-Enabled Digital Twin Creation for Vehicles
-
-### Quick Start
-
 1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+You must install dependencies in three separate folders:
+
+# Backend
+```cd backend
+npm install```
+
+# IoT Telematics
+```cd ../iot-telematics
+npm install```
+
+# Chaincode / Blockchain SDK
+```cd ../chaincode
+npm install```
+
+
 
 2. **Configure Environment**
-   - Update `.env` file with your Kaleido credentials
+   - Update `.env` file with your  credentials
    - Ensure certificates are properly configured
+
 
 3. **Start Development Server**
    ```bash
@@ -25,9 +32,9 @@
 
 ### Architecture
 
-- **Blockchain**: Hyperledger Fabric via Kaleido
+- **Blockchain**: Hyperledger Fabric 
 - **Backend**: Node.js with Express
-- **Deployment**: Render.com
+- **Deployment**: http://localhost:3001
 - **Authentication**: X.509 certificates
 
 ### API Endpoints
@@ -44,18 +51,15 @@
 - fabric-network@2.2.20
 - Express.js 4.19.2
 
-### Module 1 Implementation Status
+### Implementation Status
 
-- [x] Multi-Agent Coordination System
-- [x] Universal Identity Management (Basic)
-- [ ] VIN-Based Digital Twins (In Progress)
-- [ ] Secure VIN Authentication (Planned)
-- [ ] AI-Driven Service Validation (Planned)
+
+- [x] VIN-Based Digital Twins 
+- [x] Secure VIN Authentication 
 
 ### Academic Requirements
 
 **Prof. Omicini (Distributed Systems)**
-- Multi-agent coordination protocols
 - Byzantine fault tolerance
 - Consensus mechanisms
 - Distributed identity management
@@ -88,15 +92,9 @@ distributed-systems-project/
    └── dashboard-iot.html
    └── esp32_telematics.ino
 ├── public              
-   └── app.js
    └── index.html
    └── style.css
 ├──test
    └── test-distributed-systems.js
 ├── README.md              
-├── start-all.sh              
-
-
-
-```
-
+├── start-all.sh 
