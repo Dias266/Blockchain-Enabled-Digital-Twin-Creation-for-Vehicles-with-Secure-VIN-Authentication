@@ -1,72 +1,111 @@
+#  Blockchain-Enabled Digital Twin Creation for Vehicles  
+A distributed system implementing VIN-based digital twins, secure authentication, and Hyperledger Fabric integration.
 
-Quick Start
+---
 
-1. **Install Dependencies**
-You must install dependencies in three separate folders:
+#  Quick Start
 
-# Backend
-```cd backend
-npm install```
-# IoT Telematics
-```cd ../iot-telematics
-npm install```
+## 1. **Install Dependencies**
 
-# Chaincode / Blockchain SDK
-```cd ../chaincode
-npm install```
+Run installation **in all three folders**:
 
+### **Backend**
+```bash
+cd backend
+npm install
+```
 
+### **IoT Telematics**
+```bash
+cd ../iot-telematics
+npm install
+```
 
-2. **Configure Environment**
-   - Update `.env` file with your  credentials
-   - Ensure certificates are properly configured
+### **Chaincode / Blockchain SDK**
+```bash
+cd ../chaincode
+npm install
+```
 
+---
 
-3. **Start Development Server**
-   ```bash
-   npm start
-   ```
+## 2. **Configure Environment**
 
-4. **Test API**
-   ```bash
-   curl http://localhost:3001/health
-   
+- Update `.env` with your credentials  
+- Ensure certificates are correctly placed and referenced  
+- Check Fabric MSP paths inside backend configuration files  
 
-### Architecture
+---
 
-- **Blockchain**: Hyperledger Fabric 
-- **Backend**: Node.js with Express
-- **Deployment**: http://localhost:3001
-- **Authentication**: X.509 certificates
+## 3. **Start Development Server**
 
-### API Endpoints
+```bash
+npm start
+```
 
-- `GET /health` - System health check
-- `GET /api/identity/list` - List all identities
-- `POST /api/identity/register` - Register new identity
-- `GET /api/identity/contract` - Contract information
+This runs the backend on:
 
-### Development
+```
+http://localhost:3000
+```
 
-- Node.js v22.18.0
-- npm 10.9.3
-- fabric-network@2.2.20
-- Express.js 4.19.2
+---
 
-### Implementation Status
+## 4. **Test API**
 
+```bash
+curl http://localhost:3001/health
+```
 
-- [x] VIN-Based Digital Twins 
-- [x] Secure VIN Authentication 
+---
 
-### Academic Requirements
+# Architecture Overview
 
-**Prof. Omicini (Distributed Systems)**
-- Byzantine fault tolerance
-- Consensus mechanisms
-- Distributed identity management
+- **Blockchain**: Hyperledger Fabric  
+- **Backend**: Node.js + Express  
+- **Deployment**: Local development — `http://localhost:3000
+- **Authentication**: X.509 certificates  
+- **IoT Layer**: ESP32 + MQTT-based telematics  
 
-### Files Structure
+---
+
+#  API Endpoints
+
+| Method | Endpoint | Description |
+|-------|----------|-------------|
+| `GET` | `/health` | System health check |
+| `GET` | `/api/identity/list` | List registered identities |
+| `POST` | `/api/identity/register` | Register a new blockchain identity |
+| `GET` | `/api/identity/contract` | Hyperledger contract metadata |
+
+---
+
+#  Development Environment
+
+- **Node.js**: v22.18.0  
+- **npm**: 10.9.3  
+- **fabric-network**: 2.2.20  
+- **Express.js**: 4.19.2  
+
+---
+
+# Implementation Status
+
+- [x] VIN-Based Digital Twins  
+- [x] Secure VIN Authentication  
+
+---
+
+#  Academic Requirements (Prof. Omicini — Distributed Systems)
+
+- Byzantine Fault Tolerance  
+- Consensus Mechanisms  
+- Distributed Identity Management  
+- Failure Detection & Recovery  
+
+---
+
+#  Project Structure
 
 ```
 distributed-systems-project/ 
