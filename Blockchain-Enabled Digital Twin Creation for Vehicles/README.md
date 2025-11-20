@@ -1,10 +1,12 @@
+
+Quick Start
+
 1. **Install Dependencies**
 You must install dependencies in three separate folders:
 
 # Backend
 ```cd backend
 npm install```
-
 # IoT Telematics
 ```cd ../iot-telematics
 npm install```
@@ -28,7 +30,7 @@ npm install```
 4. **Test API**
    ```bash
    curl http://localhost:3001/health
-   ```
+   
 
 ### Architecture
 
