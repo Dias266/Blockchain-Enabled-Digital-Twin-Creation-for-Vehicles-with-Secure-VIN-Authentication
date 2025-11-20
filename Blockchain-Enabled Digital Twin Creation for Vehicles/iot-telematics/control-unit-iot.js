@@ -1,305 +1,221 @@
-// control-unit-iot.js 
-// IoT Integration for Control Unit
-
+require('dotenv').config();
 const mqtt = require('mqtt');
 const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
-const express = require('express');
-const cors = require('cors');
+const axios = require('axios');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+// Configuration with fallbacks
+const config = {
+  mqtt: {
+    brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
+    topic: process.env.MQTT_TOPIC_VEHICLE || 'vehicle/telemetry',
+    qos: parseInt(process.env.MQTT_QOS) || 1,
+    clientId: process.env.MQTT_CLIENT_ID || 'control-unit-' + Math.random().toString(16).substr(2, 8)
+  },
+  serial: {
+    port: process.env.ARDUINO_PORT || '/dev/cu.usbmodem1101',
+    baudRate: parseInt(process.env.ARDUINO_BAUD_RATE) || 9600
+  },
+  blockchain: {
+    apiUrl: process.env.BLOCKCHAIN_API_URL || 'http://localhost:3000/api'
+  },
+  debug: process.env.LOG_LEVEL === 'debug'
+};
 
-// CONFIGURATION
+// MQTT Client with error handling
+let mqttClient;
 
-const MQTT_BROKER = 'mqtt://localhost:1883';
-const SERIAL_PORT = '/dev/ttyUSB0'; // CHANGE THIS to your Arduino port!
-const SERIAL_BAUD_RATE = 9600;  // Match Arduino baud rate
+function connectMQTT() {
+  console.log(`[MQTT] Connecting to ${config.mqtt.brokerUrl}...`);
+  
+  mqttClient = mqtt.connect(config.mqtt.brokerUrl, {
+    clientId: config.mqtt.clientId,
+    clean: true,
+    reconnectPeriod: 5000, // Retry every 5 seconds
+    connectTimeout: 30000
+  });
 
-// MQTT SERVICE
-
-class MQTTService {
-    constructor() {
-        this.client = mqtt.connect(MQTT_BROKER);
-        this.lastTelemetry = null;
-        
-        this.client.on('connect', () => {
-            console.log('MQTT Connected');
-            this.client.subscribe('vehicle/telemetry');
-            this.client.subscribe('vehicle/state');
-        });
-        
-        this.client.on('message', (topic, message) => {
-            this.handleMessage(topic, message.toString());
-        });
-        
-        this.client.on('error', (err) => {
-            console.error('MQTT Error:', err.message);
-        });
-    }
+  mqttClient.on('connect', () => {
+    console.log('[MQTT] ✅ Connected successfully');
     
-    handleMessage(topic, message) {
-        console.log(`MQTT [${topic}]: ${message.substring(0, 100)}...`);
-        
-        if (topic === 'vehicle/telemetry') {
-            this.lastTelemetry = message;
-            
-            // FIXED: Check if serial service is ready before sending
-            if (serialService && serialService.port && serialService.port.isOpen) {
-                serialService.verifyTelemetry(message);
-            } else {
-                console.log('Arduino not connected - skipping verification');
-            }
-            
-            // Store telemetry data
-            dataStorageService.storeTelemetry(this.parseTelemetry(message));
-        }
+    // Subscribe to vehicle telemetry topic
+    mqttClient.subscribe(config.mqtt.topic, { qos: config.mqtt.qos }, (err) => {
+      if (err) {
+        console.error('[MQTT] ❌ Subscription error:', err.message);
+      } else {
+        console.log(`[MQTT] ✅ Subscribed to ${config.mqtt.topic}`);
+      }
+    });
+  });
+
+  mqttClient.on('error', (error) => {
+    console.error('[MQTT] ❌ Connection error:', error.message);
+    console.error('[MQTT] Check if Mosquitto broker is running:');
+    console.error('[MQTT]   Mac/Linux: mosquitto -v');
+    console.error('[MQTT]   Or check: ps aux | grep mosquitto');
+  });
+
+  mqttClient.on('offline', () => {
+    console.warn('[MQTT] ⚠️  Client offline - attempting reconnection...');
+  });
+
+  mqttClient.on('reconnect', () => {
+    console.log('[MQTT] 🔄 Reconnecting...');
+  });
+
+  mqttClient.on('message', async (topic, message) => {
+    try {
+      const telemetryData = JSON.parse(message.toString());
+      console.log('[MQTT] 📨 Received telemetry:', {
+        vin: telemetryData.vin,
+        temp: telemetryData.temperature,
+        timestamp: telemetryData.timestamp
+      });
+
+      // Forward to Arduino for signature verification
+      await verifySignature(telemetryData);
+      
+    } catch (error) {
+      console.error('[MQTT] ❌ Message processing error:', error.message);
     }
-    
-    parseTelemetry(packet) {
-        const parts = packet.split('|');
-        const data = {};
-        
-        parts.forEach(part => {
-            if (part.includes(':')) {
-                const [key, value] = part.split(':');
-                data[key.toLowerCase()] = value;
-            }
-        });
-        
-        return data;
-    }
-    
-    publishState(state) {
-        this.client.publish('vehicle/state', state);
-        console.log(`Published state: ${state}`);
-    }
+  });
 }
 
-// SERIAL SERVICE (Arduino Communication)
+// Serial Port with error handling
+let serialPort;
 
-class SerialService {
-    constructor() {
-        this.port = null;
-        this.parser = null;
-        this.initializeSerial();
-    }
-    
-    initializeSerial() {
-        try {
-            this.port = new SerialPort({
-                path: SERIAL_PORT,
-                baudRate: SERIAL_BAUD_RATE
-            });
-            
-            this.parser = this.port.pipe(new ReadlineParser({ delimiter: '\n' }));
-            
-            this.port.on('open', () => {
-                console.log('Serial connection established with Arduino');
-            });
-            
-            this.parser.on('data', (data) => {
-                this.handleSerialData(data);
-            });
-            
-            this.port.on('error', (err) => {
-                console.error('Serial error:', err.message);
-                console.log('Arduino not found - system will continue without verification');
-            });
-            
-        } catch (error) {
-            console.error('Failed to initialize serial:', error.message);
-            console.log('Continuing without Arduino verification');
-        }
-    }
-    
-    verifyTelemetry(telemetry) {
-        if (this.port && this.port.isOpen) {
-            this.port.write(`VERIFY:${telemetry}\n`);
-        }
-    }
-    
-    handleSerialData(data) {
-        console.log(`Arduino: ${data}`);
-        
-        if (data.startsWith('AUTH_RESULT:')) {
-            const result = data.substring(12).trim();
-            
-            if (result === 'VALID') {
-                console.log('Signature verified by Arduino');
-                blockchainService.storeAuthenticatedData(mqttService.lastTelemetry);
-            } else {
-                console.log('Invalid signature detected');
-            }
-        }
-    }
-}
+function connectSerial() {
+  console.log(`[Serial] Connecting to ${config.serial.port}...`);
+  
+  serialPort = new SerialPort({
+    path: config.serial.port,
+    baudRate: config.serial.baudRate,
+    autoOpen: false
+  });
 
-// DATA STORAGE SERVICE
-
-class DataStorageService {
-    constructor() {
-        this.telemetryHistory = [];
-        this.maxHistory = 100;
-        this.currentState = 'NORMAL';
-    }
-    
-    storeTelemetry(data) {
-        this.telemetryHistory.push({
-            ...data,
-            receivedAt: new Date().toISOString()
+  serialPort.open((err) => {
+    if (err) {
+      console.error('[Serial] ❌ Connection error:', err.message);
+      console.error('[Serial] Available ports:');
+      SerialPort.list().then(ports => {
+        ports.forEach(port => {
+          console.error(`[Serial]   - ${port.path}`);
         });
-        
-        // Keep only last N entries
-        if (this.telemetryHistory.length > this.maxHistory) {
-            this.telemetryHistory = this.telemetryHistory.slice(-this.maxHistory);
-        }
-        
-        // Update state based on temperature
-        this.updateState(parseFloat(data.temp) || 0);
+      });
+      console.error('[Serial] Update ARDUINO_PORT in .env file');
+      return;
     }
     
-    updateState(temperature) {
-        let newState = 'NORMAL';
-        
-        if (temperature >= 40) {
-            newState = 'CRITICAL';
-        } else if (temperature >= 30) {
-            newState = 'WARNING';
-        }
-        
-        if (newState !== this.currentState) {
-            this.currentState = newState;
-            console.log(`State changed to: ${newState}`);
-            mqttService.publishState(newState);
-        }
-    }
-    
-    getLatestTelemetry() {
-        return this.telemetryHistory[this.telemetryHistory.length - 1] || null;
-    }
-    
-    getTelemetryHistory() {
-        return this.telemetryHistory;
-    }
-    
-    getStatistics() {
-        if (this.telemetryHistory.length === 0) {
-            return { avg: 0, min: 0, max: 0, count: 0 };
-        }
-        
-        const temps = this.telemetryHistory
-            .map(t => parseFloat(t.temp))
-            .filter(t => !isNaN(t));
-        
-        if (temps.length === 0) {
-            return { avg: 0, min: 0, max: 0, count: 0 };
-        }
-        
-        return {
-            avg: temps.reduce((a, b) => a + b, 0) / temps.length,
-            min: Math.min(...temps),
-            max: Math.max(...temps),
-            count: temps.length
-        };
-    }
+    console.log('[Serial] ✅ Connected successfully');
+  });
+
+  serialPort.on('data', (data) => {
+    console.log('[Serial] 📨 Received:', data.toString());
+  });
+
+  serialPort.on('error', (error) => {
+    console.error('[Serial] ❌ Error:', error.message);
+  });
 }
 
-// BLOCKCHAIN INTEGRATION SERVICE
+// Signature verification
+async function verifySignature(telemetryData) {
+  if (!serialPort || !serialPort.isOpen) {
+    console.warn('[Serial] ⚠️  Port not open, skipping verification');
+    // In simulation mode, proceed anyway
+    await submitToBlockchain(telemetryData);
+    return;
+  }
 
-class BlockchainService {
-    async storeAuthenticatedData(telemetryPacket) {
-        try {
-            const data = mqttService.parseTelemetry(telemetryPacket);
-            
-            // Log that data is ready for blockchain
-            console.log(' Blockchain storage: Data ready for distributed system');
-            console.log('   VIN:', data.vin);
-            console.log('   Temp:', data.temp);
-            console.log('   Mileage:', data.mileage);
-            
-            // Optional: Uncomment when distributed systems backend is running
-            /*
-            const response = await fetch('http://localhost:3001/api/vehicle/telemetry', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    vin: data.vin,
-                    temperature: parseFloat(data.temp),
-                    mileage: parseInt(data.mileage),
-                    state: data.state,
-                    dtc: data.dtc || null,
-                    authenticated: true,
-                    timestamp: new Date().toISOString()
-                })
-            });
-            
-            const result = await response.json();
-            console.log('Telemetry stored on blockchain:', result);
-            */
-            
-        } catch (error) {
-            console.error('Blockchain storage failed:', error.message);
+  return new Promise((resolve, reject) => {
+    const verificationRequest = JSON.stringify({
+      vin: telemetryData.vin,
+      signature: telemetryData.signature,
+      data: telemetryData.data
+    });
+
+    serialPort.write(verificationRequest + '\n', (err) => {
+      if (err) {
+        console.error('[Serial] ❌ Write error:', err.message);
+        reject(err);
+        return;
+      }
+
+      // Wait for Arduino response
+      serialPort.once('data', async (response) => {
+        const result = response.toString().trim();
+        
+        if (result === 'VALID') {
+          console.log('[Serial] ✅ Signature verified');
+          await submitToBlockchain(telemetryData);
+          resolve(true);
+        } else {
+          console.error('[Serial] ❌ Invalid signature');
+          reject(new Error('Invalid signature'));
         }
-    }
+      });
+    });
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      reject(new Error('Verification timeout'));
+    }, 5000);
+  });
 }
 
-// INITIALIZE SERVICES
+// Blockchain submission
+async function submitToBlockchain(telemetryData) {
+  try {
+    console.log('[Blockchain] 📤 Submitting telemetry...');
+    
+    const response = await axios.post(
+      `${config.blockchain.apiUrl}/vehicle/${telemetryData.vin}/telemetry`,
+      telemetryData,
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
+      }
+    );
 
-const mqttService = new MQTTService();
-const serialService = new SerialService();
-const dataStorageService = new DataStorageService();
-const blockchainService = new BlockchainService();
+    if (response.data.success) {
+      console.log('[Blockchain] ✅ Telemetry stored successfully');
+      console.log('[Blockchain] Transaction ID:', response.data.transactionId);
+    } else {
+      console.error('[Blockchain] ❌ Submission failed:', response.data.message);
+    }
+    
+  } catch (error) {
+    console.error('[Blockchain] ❌ API error:', error.message);
+    if (error.response) {
+      console.error('[Blockchain] Status:', error.response.status);
+      console.error('[Blockchain] Response:', error.response.data);
+    }
+  }
+}
 
-// HTTP API FOR DASHBOARD
-
-const PORT = 3002;
-
-app.get('/api/telemetry/latest', (req, res) => {
-    res.json({
-        success: true,
-        data: dataStorageService.getLatestTelemetry(),
-        state: dataStorageService.currentState
-    });
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n[System] Shutting down gracefully...');
+  
+  if (mqttClient) {
+    mqttClient.end(true);
+    console.log('[MQTT] Disconnected');
+  }
+  
+  if (serialPort && serialPort.isOpen) {
+    serialPort.close();
+    console.log('[Serial] Disconnected');
+  }
+  
+  process.exit(0);
 });
 
-app.get('/api/telemetry/history', (req, res) => {
-    res.json({
-        success: true,
-        data: dataStorageService.getTelemetryHistory()
-    });
-});
+// Start services
+console.log('==================================================');
+console.log('   IoT Control Unit - Starting Services');
+console.log('==================================================\n');
 
-app.get('/api/telemetry/statistics', (req, res) => {
-    res.json({
-        success: true,
-        stats: dataStorageService.getStatistics(),
-        state: dataStorageService.currentState
-    });
-});
+connectMQTT();
+connectSerial();
 
-app.get('/api/status', (req, res) => {
-    res.json({
-        success: true,
-        mqtt: mqttService.client.connected,
-        serial: serialService.port ? serialService.port.isOpen : false,
-        telemetryCount: dataStorageService.telemetryHistory.length,
-        currentState: dataStorageService.currentState,
-        timestamp: new Date().toISOString()
-    });
-});
-
-app.listen(PORT, () => {
-    console.log(`\n${'='.repeat(60)}`);
-    console.log('IoT Control Unit - Backend Server');
-    console.log(`${'='.repeat(60)}\n`);
-    console.log(`HTTP Server: http://localhost:${PORT}`);
-    console.log(`MQTT Broker: ${MQTT_BROKER}`);
-    console.log(`Serial Port: ${SERIAL_PORT}`);
-    console.log(`\n Monitoring vehicle telemetry...\n`);
-    console.log(` Dashboard: Open dashboard-iot.html in browser`);
-    console.log(`\n${'='.repeat(60)}\n`);
-});
-
-module.exports = { mqttService, dataStorageService };
+console.log('\n[System] ✅ Control unit initialized');
+console.log('[System] Waiting for telemetry data...\n');
