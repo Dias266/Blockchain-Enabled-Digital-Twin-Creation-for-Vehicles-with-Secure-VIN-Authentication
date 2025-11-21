@@ -14,7 +14,7 @@ class FailureRecoveryManager {
             this.checkPeerHealth();
         }, 5000); // Check every 5 seconds
 
-        console.log('💓 Started distributed failure monitoring');
+        console.log('Started distributed failure monitoring');
     }
 
     async checkPeerHealth() {
@@ -22,10 +22,10 @@ class FailureRecoveryManager {
             const isHealthy = await this.failureDetector.checkHealth(peer);
             
             if (!isHealthy && peer.status === 'online') {
-                console.log(`⚠️ Peer ${peer.nodeId} failed health check`);
+                console.log(`Peer ${peer.nodeId} failed health check`);
                 await this.handleFailure(peer);
             } else if (isHealthy && peer.status === 'failed') {
-                console.log(`✅ Peer ${peer.nodeId} recovered`);
+                console.log(`Peer ${peer.nodeId} recovered`);
                 await this.handleRecovery(peer);
             }
         }
