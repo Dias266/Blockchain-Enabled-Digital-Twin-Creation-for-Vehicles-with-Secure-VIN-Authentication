@@ -10,7 +10,7 @@ class DistributedSystemsTest {
     }
 
     async runAllTests() {
-        console.log('\n🧪 DISTRIBUTED SYSTEMS TEST SUITE\n');
+        console.log('\n DISTRIBUTED SYSTEMS TEST SUITE\n');
         console.log('='.repeat(60));
 
         await this.testNetworkStatus();
@@ -23,7 +23,7 @@ class DistributedSystemsTest {
     }
 
     async testNetworkStatus() {
-        console.log('\n📊 Test 1: Network Status');
+        console.log('\n Test 1: Network Status');
         try {
             const response = await axios.get(`${BASE_URL}/api/network/status`);
             const { network, consensus, byzantineDefense } = response.data;
@@ -41,7 +41,7 @@ class DistributedSystemsTest {
     }
 
     async testByzantineTolerance() {
-        console.log('\n🛡️  Test 2: Byzantine Fault Tolerance');
+        console.log('\n  Test 2: Byzantine Fault Tolerance');
         try {
             const response = await axios.post(`${BASE_URL}/api/test/byzantine`);
             const passed = response.data.success && 
@@ -78,7 +78,7 @@ class DistributedSystemsTest {
     }
 
     async testDataReplication() {
-        console.log('\n📋 Test 5: Distributed Data Replication');
+        console.log('\n Test 5: Distributed Data Replication');
         try {
             // Register vehicle
             const vin = `TEST${Date.now()}`;
@@ -117,7 +117,7 @@ class DistributedSystemsTest {
 
     printSummary() {
         console.log('\n' + '='.repeat(60));
-        console.log('📊 TEST SUMMARY\n');
+        console.log(' TEST SUMMARY\n');
 
         const total = this.results.length;
         const passed = this.results.filter(r => r.passed).length;
