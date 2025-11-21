@@ -19,7 +19,7 @@ class RaftConsensusProtocol {
     // Start the Raft consensus protocol 
     start() { 
         this.resetElectionTimer(); 
-        console.log(`🚀 Node ${this.nodeId} starting Raft consensus protocol`); 
+        console.log(` Node ${this.nodeId} starting Raft consensus protocol`); 
     } 
 
     // Election timeout - become candidate and request votes 
