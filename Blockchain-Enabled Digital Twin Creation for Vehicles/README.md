@@ -1,4 +1,4 @@
-#  Blockchain-Enabled Digital Twin Creation forVehicles with Secure VIN Authentication and IoT Telemetry Integration 
+#  Blockchain-Enabled Digital Twin Creation for Vehicles with Secure VIN Authentication and IoT Telemetry Integration 
 A distributed system implementing VIN-based digital twins, secure authentication, and Hyperledger Fabric integration.
 
 ---
