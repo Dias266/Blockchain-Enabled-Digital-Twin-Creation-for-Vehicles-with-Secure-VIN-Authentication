@@ -2,14 +2,8 @@
 # Universal Digital Identity Framework
 
 ---
-################################################################################
-#
 #   Section: Organizations
-#
-#   - This section defines the different organizational identities which will
-#   be referenced later in the configuration.
-#
-################################################################################
+
 Organizations:
 
     # OrdererOrg defines the organizational structure for the orderer
@@ -58,8 +52,7 @@ Organizations:
             - Host: peer0.org1.example.com
               Port: 7051
 
-################################################################################
-#
+
 #   SECTION: Capabilities
 #
 #   - This section defines the capabilities of fabric network. This is a new
@@ -75,8 +68,7 @@ Organizations:
 #   processing transactions until they have been upgraded.  For v1.0.x if any
 #   capabilities are defined (including a map with all capabilities turned off)
 #   then the v1.0.x peer will deliberately crash.
-#
-################################################################################
+
 Capabilities:
     # Channel capabilities apply to both the orderers and the peers and must be
     # supported by both.
@@ -93,14 +85,12 @@ Capabilities:
     Application: &ApplicationCapabilities
         V2_5: true
 
-################################################################################
-#
+
 #   SECTION: Application
 #
 #   - This section defines the values to encode into a config transaction or
 #   genesis block for application related parameters
-#
-################################################################################
+
 Application: &ApplicationDefaults
 
     # Organizations is the list of orgs which are defined as participants on
@@ -202,14 +192,12 @@ Orderer: &OrdererDefaults
             Type: ImplicitMeta
             Rule: "ANY Writers"
 
-################################################################################
-#
+
 #   CHANNEL
 #
 #   This section defines the values to encode into a config transaction or
 #   genesis block for channel related parameters.
-#
-################################################################################
+
 Channel: &ChannelDefaults
     # Policies defines the set of policies at this level of the config tree
     # For Channel policies, their canonical path is
@@ -234,14 +222,12 @@ Channel: &ChannelDefaults
     Capabilities:
         <<: *ChannelCapabilities
 
-################################################################################
-#
+
 #   Profile
 #
 #   - Different configuration profiles may be encoded here to be specified
 #   as parameters to the configtxgen tool
-#
-################################################################################
+
 Profiles:
 
     # TwoOrgsApplicationGenesis is the genesis profile used for channel creation
